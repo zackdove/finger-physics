@@ -2,9 +2,21 @@ import { Canvas } from "@react-three/fiber";
 
 import { Suspense, useEffect, useState } from "react";
 import { Environment, Loader, Sphere } from "@react-three/drei";
+import { Physics, RigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { HandLandmarker } from "./components/HandLandmarker/HandLandmarker";
 import { HandTracker } from "./components/HandTracker/HandTracker";
+import BallsRapier from "./components/Balls";
+
+function Ball() {
+  return (
+    <RigidBody colliders="ball" position={[0, 5, 0]}>
+      <Sphere>
+        <meshStandardMaterial />
+      </Sphere>
+    </RigidBody>
+  );
+}
 
 export default function App() {
   return (
@@ -35,9 +47,6 @@ export default function App() {
             castShadow
             shadow-mapSize={[512, 512]}
           />
-          <Sphere>
-            <meshStandardMaterial />
-          </Sphere>
           <Environment
             background={false}
             files={[
@@ -47,16 +56,14 @@ export default function App() {
             ]}
             backgroundIntensity={0.2}
           />
-          {/* <Physics>
-            <HandSphere handPosRef={handPosRef} />
-            <Balls count={ballCount} handPosRef={handPosRef} />
-          </Physics> */}
-
-          <Suspense fallback={<Loader />}>
-            <HandLandmarker>
-              <HandTracker />
-            </HandLandmarker>
-          </Suspense>
+          <Physics gravity={[0, 0, 0]}>
+            <BallsRapier />
+            <Suspense fallback={<Loader />}>
+              <HandLandmarker>
+                <HandTracker />
+              </HandLandmarker>
+            </Suspense>
+          </Physics>
 
           {/* <HandLandmarker> */}
           {/* <Physics gravity={[0, 0, 0]}> */}
