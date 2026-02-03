@@ -1,18 +1,33 @@
 import * as React from "react";
-import { useEffect, useContext, createContext } from "react";
+import { useEffect, useContext, createContext, useState } from "react";
 import {
   FilesetResolver,
   HandLandmarker as MPHandLandmarker,
 } from "@mediapipe/tasks-vision";
-import { suspend, clear } from "suspend-react";
+
+/* ---------------- Types ---------------- */
+
+type HandLandmarkerState = {
+  landmarker: MPHandLandmarker | null;
+  ready: boolean;
+};
 
 /* ---------------- Context ---------------- */
 
-const HandLandmarkerContext = createContext<MPHandLandmarker | null>(null);
+const HandLandmarkerContext = createContext<HandLandmarkerState | null>(null);
 
 export const useHandLandmarker = () => {
   const ctx = useContext(HandLandmarkerContext);
-  if (!ctx) throw new Error("useHandLandmarker must be used inside HandLandmarker");
+  if (!ctx || !ctx.landmarker) throw new Error("HandLandmarker not ready");
+  return ctx.landmarker;
+};
+
+export const useHandLandmarkerStatus = () => {
+  const ctx = useContext(HandLandmarkerContext);
+  if (!ctx)
+    throw new Error(
+      "useHandLandmarkerStatus must be used inside HandLandmarker",
+    );
   return ctx;
 };
 
@@ -34,7 +49,7 @@ export const HandLandmarkerDefaults = {
   },
 };
 
-/* ---------------- HandLandmarker Component ---------------- */
+/* ---------------- Component ---------------- */
 
 export function HandLandmarker({
   basePath = HandLandmarkerDefaults.basePath,
@@ -45,23 +60,40 @@ export function HandLandmarker({
   options?: typeof HandLandmarkerDefaults.options;
   children: React.ReactNode;
 }) {
-  const opts = JSON.stringify(options);
-
-  const handLandmarker = suspend(async () => {
-    const vision = await FilesetResolver.forVisionTasks(basePath);
-    return MPHandLandmarker.createFromOptions(vision, options);
-  }, [basePath, opts]);
+  const [state, setState] = useState<HandLandmarkerState>({
+    landmarker: null,
+    ready: false,
+  });
 
   useEffect(() => {
+    let active = true;
+    let instance: MPHandLandmarker | null = null;
+
+    (async () => {
+      try {
+        const vision = await FilesetResolver.forVisionTasks(basePath);
+        instance = await MPHandLandmarker.createFromOptions(vision, options);
+
+        if (!active) return;
+
+        setState({
+          landmarker: instance,
+          ready: true,
+        });
+      } catch (err) {
+        console.error("Failed to load HandLandmarker", err);
+      }
+    })();
+
     return () => {
-      handLandmarker?.close();
-      clear([basePath, opts]);
+      active = false;
+      instance?.close();
     };
-  }, [handLandmarker, basePath, opts]);
+  }, [basePath, JSON.stringify(options)]);
 
   return (
-    <HandLandmarkerContext.Provider value={handLandmarker}>
-      {children}
+    <HandLandmarkerContext.Provider value={state}>
+      {state.ready ? children : null}
     </HandLandmarkerContext.Provider>
   );
 }
