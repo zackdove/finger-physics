@@ -8,6 +8,7 @@ const deltaVel = new THREE.Vector3();
 
 export function useCentralForce(strength = 3, damping = 0.25) {
   const bodies = useRef<Set<RapierRigidBody>>(new Set());
+  const activeCountRef = useRef(0);
 
   function register(body: RapierRigidBody) {
     bodies.current.add(body);
@@ -17,18 +18,28 @@ export function useCentralForce(strength = 3, damping = 0.25) {
     bodies.current.delete(body);
   }
 
+  function setActiveCount(n: number) {
+    activeCountRef.current = n;
+  }
+
   useFrame((_, delta) => {
+    let i = 0;
+
     bodies.current.forEach((body) => {
       const pos = body.translation();
+      if (pos.x > 9000) return;
+      if (i++ >= activeCountRef.current) {
+        // body.setTranslation({ x: 9999, y: 9999, z: 9999 }, true);
+        return;
+      }
+
       const vel = body.linvel();
 
-      // --- Linear pull toward center ---
       targetVel.set(-pos.x, -pos.y, -pos.z).multiplyScalar(strength);
       deltaVel
         .set(targetVel.x - vel.x, targetVel.y - vel.y, targetVel.z - vel.z)
         .multiplyScalar(delta / (delta + damping));
 
-      // --- Apply central pull ---
       body.setLinvel(
         {
           x: vel.x + deltaVel.x,
@@ -38,11 +49,9 @@ export function useCentralForce(strength = 3, damping = 0.25) {
         true,
       );
 
-      // --- Orbit around center ---
-      const orbitSpeed = 1; // adjust for faster/slower rotation
+      const orbitSpeed = 1;
       const angle = orbitSpeed * delta;
 
-      // Simple Y-axis rotation around origin
       const x = pos.x * Math.cos(angle) - pos.z * Math.sin(angle);
       const z = pos.x * Math.sin(angle) + pos.z * Math.cos(angle);
 
@@ -50,5 +59,5 @@ export function useCentralForce(strength = 3, damping = 0.25) {
     });
   });
 
-  return { register, unregister };
+  return { register, unregister, setActiveCount };
 }

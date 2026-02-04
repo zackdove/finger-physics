@@ -17,6 +17,13 @@ export const useSceneControls = () => {
       step: 0.1,
       label: "Sphere Size",
     },
+    sphereCount: {
+      value: 30,
+      min: 1,
+      max: 500,
+      step: 1,
+      label: "Sphere Count",
+    },
     trackedSphereColor: {
       value: "#00ff00", // Lime green for the tracked sphere
       label: "Tracked Sphere Color",

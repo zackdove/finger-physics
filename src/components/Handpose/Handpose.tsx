@@ -33,7 +33,7 @@ export const Handpose = forwardRef(
       const p = points[8];
       const x = (1 - p.x - 0.5) * viewport.width * side;
       const y = (1 - p.y - 0.5) * viewport.height;
-      const z = -p.z * viewport.width * depth;
+      const z = 0;
 
       group.current.setNextKinematicTranslation({ x, y, z });
     }, [points, side, depth, viewport]);

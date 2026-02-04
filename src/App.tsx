@@ -23,7 +23,14 @@ function Ball() {
 
 export default function App() {
   const [mediaPipeReady, setMediaPipeReady] = useState(false);
-  const { backgroundColor, sphereColor, sphereSize, trackedSphereColor, trackedSphereSize } = useSceneControls();
+  const {
+    backgroundColor,
+    sphereColor,
+    sphereSize,
+    sphereCount,
+    trackedSphereColor,
+    trackedSphereSize,
+  } = useSceneControls();
 
   return (
     <>
@@ -70,7 +77,11 @@ export default function App() {
         />
 
         <Physics gravity={[0, 0, 0]}>
-          <BallsRapier sphereColor={sphereColor} sphereSize={sphereSize} />
+          <BallsRapier
+            sphereColor={sphereColor}
+            sphereSize={sphereSize}
+            sphereCount={sphereCount}
+          />
 
           <HandLandmarker>
             <MediaPipeReadySignal onReady={() => setMediaPipeReady(true)} />
