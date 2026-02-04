@@ -9,6 +9,7 @@ import { HandTracker } from "./components/HandTracker/HandTracker";
 import BallsRapier from "./components/Balls";
 import { MediaPipeLoader } from "./components/MediaPipeLoader";
 import { MediaPipeReadySignal } from "./components/MediaPipeReadySignal";
+import { useSceneControls } from "./components/LevaControls/SceneControls";
 
 function Ball() {
   return (
@@ -22,6 +23,7 @@ function Ball() {
 
 export default function App() {
   const [mediaPipeReady, setMediaPipeReady] = useState(false);
+  const { backgroundColor, sphereColor, sphereSize, trackedSphereColor, trackedSphereSize } = useSceneControls();
 
   return (
     <>
@@ -41,7 +43,12 @@ export default function App() {
           top: "0",
           left: "0",
         }}
+        gl={{ antialias: true }}
+        onCreated={({ gl }) => {
+          gl.setClearColor(new THREE.Color(backgroundColor));
+        }}
       >
+        <color attach="background" args={[backgroundColor]} />
         <ambientLight intensity={0.4} />
         <spotLight
           intensity={1}
@@ -63,11 +70,14 @@ export default function App() {
         />
 
         <Physics gravity={[0, 0, 0]}>
-          <BallsRapier />
+          <BallsRapier sphereColor={sphereColor} sphereSize={sphereSize} />
 
           <HandLandmarker>
             <MediaPipeReadySignal onReady={() => setMediaPipeReady(true)} />
-            <HandTracker />
+            <HandTracker
+              trackedSphereColor={trackedSphereColor}
+              trackedSphereSize={trackedSphereSize}
+            />
           </HandLandmarker>
         </Physics>
       </Canvas>

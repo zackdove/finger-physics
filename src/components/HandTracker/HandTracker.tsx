@@ -40,10 +40,14 @@ export const useHandTracker = () => {
 function HandTrackerInternal({
   videoSrc,
   depth,
+  trackedSphereColor,
+  trackedSphereSize,
   ...props
 }: {
   videoSrc: MediaStream | string;
   depth: number;
+  trackedSphereColor: string;
+  trackedSphereSize: number;
 }) {
   const handLandmarker = useHandLandmarker();
 
@@ -111,6 +115,8 @@ function HandTrackerInternal({
           side={handedness0 === "Left" ? 1 : -1}
           depth={depth}
           visible
+          trackedSphereColor={trackedSphereColor}
+          trackedSphereSize={trackedSphereSize}
         />
       )}
 
@@ -121,6 +127,8 @@ function HandTrackerInternal({
           side={handedness0 === "Left" ? -1 : 1}
           depth={depth}
           visible
+          trackedSphereColor={trackedSphereColor}
+          trackedSphereSize={trackedSphereSize}
         />
       )}
     </HandTrackerContext.Provider>
@@ -131,9 +139,13 @@ export const HandTracker = forwardRef(function HandTracker(
   {
     videoSrc: videoSrcProp,
     depth = 0.15,
+    trackedSphereColor,
+    trackedSphereSize,
   }: {
     videoSrc?: MediaStream | string;
     depth?: number;
+    trackedSphereColor: string;
+    trackedSphereSize: number;
   },
   ref,
 ) {
@@ -166,6 +178,11 @@ export const HandTracker = forwardRef(function HandTracker(
   }, [videoSrcProp]);
 
   return videoSrc ? (
-    <HandTrackerInternal videoSrc={videoSrc} depth={depth} />
+    <HandTrackerInternal
+      videoSrc={videoSrc}
+      depth={depth}
+      trackedSphereColor={trackedSphereColor}
+      trackedSphereSize={trackedSphereSize}
+    />
   ) : null;
 });

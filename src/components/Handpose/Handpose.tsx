@@ -9,7 +9,18 @@ import { useThree } from "@react-three/fiber";
 import { RigidBody } from "@react-three/rapier";
 
 export const Handpose = forwardRef(
-  ({ points, side = 1, depth = 0.15, visible = true, ...props }, ref) => {
+  (
+    {
+      points,
+      side = 1,
+      depth = 0.15,
+      visible = true,
+      trackedSphereColor,
+      trackedSphereSize,
+      ...props
+    },
+    ref,
+  ) => {
     const group = useRef();
     const { viewport } = useThree();
 
@@ -30,8 +41,8 @@ export const Handpose = forwardRef(
     return (
       <RigidBody type="kinematicPosition" ref={group} visible={visible}>
         <mesh>
-          <sphereGeometry args={[1, 16, 16]} />
-          <meshBasicMaterial color="lime" />
+          <sphereGeometry args={[trackedSphereSize, 16, 16]} />
+          <meshBasicMaterial color={trackedSphereColor} />
         </mesh>
       </RigidBody>
     );
