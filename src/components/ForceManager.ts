@@ -6,9 +6,19 @@ import type { RapierRigidBody } from "@react-three/rapier";
 const targetVel = new THREE.Vector3();
 const deltaVel = new THREE.Vector3();
 
-export function useCentralForce(strength = 3, damping = 0.25) {
+export function useCentralForce() {
   const bodies = useRef<Set<RapierRigidBody>>(new Set());
   const activeCountRef = useRef(0);
+
+  const params = useRef({
+    forceStrength: 3,
+    forceDamping: 0.25,
+    forceOrbitSpeed: 1,
+  });
+
+  function setParams(p: Partial<typeof params.current>) {
+    Object.assign(params.current, p);
+  }
 
   function register(body: RapierRigidBody) {
     bodies.current.add(body);
@@ -26,19 +36,17 @@ export function useCentralForce(strength = 3, damping = 0.25) {
     let i = 0;
 
     bodies.current.forEach((body) => {
-      const pos = body.translation();
-      if (pos.x > 9000) return;
-      if (i++ >= activeCountRef.current) {
-        // body.setTranslation({ x: 9999, y: 9999, z: 9999 }, true);
-        return;
-      }
+      if (i++ >= activeCountRef.current) return;
 
+      const { forceStrength, forceDamping, forceOrbitSpeed } = params.current;
+
+      const pos = body.translation();
       const vel = body.linvel();
 
-      targetVel.set(-pos.x, -pos.y, -pos.z).multiplyScalar(strength);
+      targetVel.set(-pos.x, -pos.y, -pos.z).multiplyScalar(forceStrength);
       deltaVel
         .set(targetVel.x - vel.x, targetVel.y - vel.y, targetVel.z - vel.z)
-        .multiplyScalar(delta / (delta + damping));
+        .multiplyScalar(delta / (delta + forceDamping));
 
       body.setLinvel(
         {
@@ -49,9 +57,7 @@ export function useCentralForce(strength = 3, damping = 0.25) {
         true,
       );
 
-      const orbitSpeed = 1;
-      const angle = orbitSpeed * delta;
-
+      const angle = forceOrbitSpeed * delta;
       const x = pos.x * Math.cos(angle) - pos.z * Math.sin(angle);
       const z = pos.x * Math.sin(angle) + pos.z * Math.cos(angle);
 
@@ -59,5 +65,5 @@ export function useCentralForce(strength = 3, damping = 0.25) {
     });
   });
 
-  return { register, unregister, setActiveCount };
+  return { register, unregister, setActiveCount, setParams };
 }

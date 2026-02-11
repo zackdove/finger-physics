@@ -30,6 +30,9 @@ export default function App() {
     sphereCount,
     trackedSphereColor,
     trackedSphereSize,
+    forceStrength,
+    forceDamping,
+    forceOrbitSpeed,
   } = useSceneControls();
 
   return (
@@ -81,6 +84,9 @@ export default function App() {
             sphereColor={sphereColor}
             sphereSize={sphereSize}
             sphereCount={sphereCount}
+            forceStrength={forceStrength}
+            forceDamping={forceDamping}
+            forceOrbitSpeed={forceOrbitSpeed}
           />
 
           <HandLandmarker>

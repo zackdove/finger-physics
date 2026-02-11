@@ -3,7 +3,7 @@ import { useControls } from "leva";
 export const useSceneControls = () => {
   const controls = useControls("Scene", {
     backgroundColor: {
-      value: "#121212", // A dark gray for the background
+      value: "#ff0000", // A dark gray for the background
       label: "Background Color",
     },
     sphereColor: {
@@ -25,7 +25,7 @@ export const useSceneControls = () => {
       label: "Sphere Count",
     },
     trackedSphereColor: {
-      value: "#00ff00", // Lime green for the tracked sphere
+      value: "#000000", // Lime green for the tracked sphere
       label: "Tracked Sphere Color",
     },
     trackedSphereSize: {
@@ -35,6 +35,9 @@ export const useSceneControls = () => {
       step: 0.05,
       label: "Tracked Sphere Size",
     },
+    forceStrength: { value: 3, min: 0, max: 20 },
+    forceDamping: { value: 0.25, min: 0, max: 2 },
+    forceOrbitSpeed: { value: 1, min: 0, max: 5 },
   });
 
   return controls;

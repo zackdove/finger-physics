@@ -19,19 +19,29 @@ export default function BallsRapier({
   sphereColor,
   sphereSize,
   sphereCount,
+  forceStrength,
+  forceDamping,
+  forceOrbitSpeed,
 }: {
   count?: number;
   sphereColor: string;
   sphereSize: number;
   sphereCount: number;
+  forceStrength: number;
+  forceDamping: number;
+  forceOrbitSpeed: number;
 }) {
   const bodiesRef = useRef<(RapierRigidBody | null)[]>([]);
 
-  const { register, unregister, setActiveCount } = useCentralForce();
+  const { register, unregister, setActiveCount, setParams } = useCentralForce();
 
   useEffect(() => {
     setActiveCount(count);
   }, [count]);
+
+  useEffect(() => {
+    setParams({ forceStrength, forceDamping, forceOrbitSpeed });
+  }, [forceStrength, forceDamping, forceOrbitSpeed]);
 
   // Generate typed instances near origin
   const instances = useMemo<InstancedRigidBodyProps[]>(() => {
