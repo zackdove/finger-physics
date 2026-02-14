@@ -3,6 +3,7 @@ import { useEffect, useContext, createContext, useState } from "react";
 import {
   FilesetResolver,
   HandLandmarker as MPHandLandmarker,
+  type HandLandmarkerOptions,
 } from "@mediapipe/tasks-vision";
 
 /* ---------------- Types ---------------- */
@@ -42,11 +43,9 @@ export const HandLandmarkerDefaults = {
         "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
       delegate: "GPU",
     },
-    runningMode: "VIDEO",
+    runningMode: "VIDEO" as const,
     numHands: 2,
-    outputHandBlendshapes: true,
-    outputHandTransformationMatrixes: true,
-  },
+  } satisfies HandLandmarkerOptions,
 };
 
 /* ---------------- Component ---------------- */
@@ -57,7 +56,7 @@ export function HandLandmarker({
   children,
 }: {
   basePath?: string;
-  options?: typeof HandLandmarkerDefaults.options;
+  options?: HandLandmarkerOptions;
   children: React.ReactNode;
 }) {
   const [state, setState] = useState<HandLandmarkerState>({

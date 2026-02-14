@@ -1,35 +1,36 @@
-import * as THREE from "three";
-import React, {
-  forwardRef,
-  useRef,
-  useEffect,
-  useImperativeHandle,
-} from "react";
-import { useThree } from "@react-three/fiber";
-import { RigidBody } from "@react-three/rapier";
+import { forwardRef, type RefObject, useImperativeHandle, useRef } from "react";
+import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
+import { useFrame, useThree } from "@react-three/fiber";
+import { RigidBody, type RapierRigidBody } from "@react-three/rapier";
 
-export const Handpose = forwardRef(
-  (
+type HandposeProps = {
+  pointsRef: RefObject<NormalizedLandmark[] | undefined>;
+  side?: number;
+  visible?: boolean;
+  trackedSphereColor: string;
+  trackedSphereSize: number;
+};
+
+export const Handpose = forwardRef<RapierRigidBody, HandposeProps>(
+  function Handpose(
     {
-      points,
+      pointsRef,
       side = 1,
-      depth = 0.15,
       visible = true,
       trackedSphereColor,
       trackedSphereSize,
-      ...props
     },
     ref,
-  ) => {
-    const group = useRef();
+  ) {
+    const group = useRef<RapierRigidBody | null>(null);
     const { viewport } = useThree();
 
     // expose Object3D to parent (HandTracker expects this)
-    useImperativeHandle(ref, () => group.current, []);
+    useImperativeHandle(ref, () => group.current!, []);
 
-    useEffect(() => {
+    useFrame(() => {
+      const points = pointsRef.current;
       if (!group.current || !points?.length) return;
-
       const p = points[8];
       const nx = 0.5 - p.x;
       const aspectBoost = Math.min(
@@ -41,11 +42,11 @@ export const Handpose = forwardRef(
       const z = 0;
 
       group.current.setNextKinematicTranslation({ x, y, z });
-    }, [points, side, depth, viewport]);
+    });
 
     return (
-      <RigidBody type="kinematicPosition" ref={group} visible={visible}>
-        <mesh>
+      <RigidBody type="kinematicPosition" ref={group}>
+        <mesh visible={visible}>
           <sphereGeometry args={[trackedSphereSize, 16, 16]} />
           <meshBasicMaterial color={trackedSphereColor} />
         </mesh>

@@ -1,18 +1,13 @@
 import { Canvas } from "@react-three/fiber";
 import gsap from "gsap";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Environment, Loader, Sphere } from "@react-three/drei";
-import { Physics, RigidBody } from "@react-three/rapier";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Environment } from "@react-three/drei";
+import { Physics } from "@react-three/rapier";
 import * as THREE from "three";
 import { HandLandmarker } from "./components/HandLandmarker/HandLandmarker";
-import {
-  HandTracker,
-  HandTrackerApi,
-} from "./components/HandTracker/HandTracker";
+import { HandTracker } from "./components/HandTracker/HandTracker";
 import BallsRapier from "./components/Balls";
-import { MediaPipeLoader } from "./components/MediaPipeLoader";
-import { MediaPipeReadySignal } from "./components/MediaPipeReadySignal";
 import { useSceneControls } from "./components/LevaControls/SceneControls";
 import {
   ShowHandCTA,
@@ -21,7 +16,7 @@ import {
 import { LoadScreen } from "./components/LoadScreen/LoadScreen";
 import { BlurOverlay } from "./components/BlurOverlay/BlurOverlay";
 import { Leva } from "leva";
-import { levaTheme } from "./config/LevaTheme";
+import { levaTheme } from "./config/levaTheme";
 
 export default function App() {
   const HAND_CTA_STORAGE_KEY = "hand_cta_shown";
@@ -51,8 +46,6 @@ export default function App() {
     forceOrbitSpeed,
   } = useSceneControls();
 
-  const handTrackerRef = useRef<HandTrackerApi | null>(null);
-  const [showHandProgress, setShowHandProgress] = useState(0);
   const [isCTAEnabled, setIsCTAEnabled] = useState(false);
   const [hasShownHandCTA, setHasShownHandCTA] = useState(() => {
     if (!persistHandCTA || typeof window === "undefined") return false;
@@ -60,10 +53,7 @@ export default function App() {
   });
 
   const showRef = useRef<ShowHandCTAHandle | null>(null);
-  const completeHideTimeoutRef = useRef<number | null>(null);
-  const blurHideTimeoutRef = useRef<number | null>(null);
   const revealCTADelayRef = useRef<gsap.core.Tween | null>(null);
-  const [isBlurVisible, setIsBlurVisible] = useState(false);
   const canRunCTA = isCTAEnabled && !hasShownHandCTA;
   const handleLoadScreenHidden = useCallback(() => {
     revealCTADelayRef.current?.kill();
@@ -81,25 +71,12 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      if (completeHideTimeoutRef.current !== null) {
-        window.clearTimeout(completeHideTimeoutRef.current);
-      }
-      if (blurHideTimeoutRef.current !== null) {
-        window.clearTimeout(blurHideTimeoutRef.current);
-      }
       revealCTADelayRef.current?.kill();
     };
   }, []);
 
-  useEffect(() => {
-    if (!mediaPipeReady) return;
-    if (hasShownHandCTA) return;
-    setIsBlurVisible(true);
-  }, [mediaPipeReady, hasShownHandCTA]);
-
   return (
     <>
-      {/* <MediaPipeLoader visible={!mediaPipeReady} /> */}
       <HandLandmarker>
         <Canvas
           camera={{
@@ -164,24 +141,9 @@ export default function App() {
               onCountComplete={() => {
                 if (canRunCTA) {
                   showRef.current?.complete();
-                  if (blurHideTimeoutRef.current !== null) {
-                    window.clearTimeout(blurHideTimeoutRef.current);
-                  }
-                  blurHideTimeoutRef.current = window.setTimeout(() => {
-                    setIsBlurVisible(false);
-                    blurHideTimeoutRef.current = null;
-                  }, 700);
-                  if (completeHideTimeoutRef.current !== null) {
-                    window.clearTimeout(completeHideTimeoutRef.current);
-                  }
-                  completeHideTimeoutRef.current = window.setTimeout(() => {
-                    markHandCTAShown();
-                    completeHideTimeoutRef.current = null;
-                  }, 1100);
                 }
               }}
               onReady={() => setMediaPipeReady(true)}
-              ref={handTrackerRef}
             />
           </Physics>
         </Canvas>
@@ -190,7 +152,6 @@ export default function App() {
             fill
             theme={levaTheme}
             collapsed
-            hideTitleBar
             hideCopyButton
             titleBar={{
               title: "Controls",
@@ -199,8 +160,15 @@ export default function App() {
           />
         </div>
       </HandLandmarker>
-      <BlurOverlay visible={isBlurVisible} />
-      {canRunCTA && <ShowHandCTA ref={showRef} />}
+      <BlurOverlay visible={mediaPipeReady && !hasShownHandCTA} />
+      {canRunCTA && (
+        <ShowHandCTA
+          ref={showRef}
+          onExitComplete={() => {
+            markHandCTAShown();
+          }}
+        />
+      )}
       <LoadScreen visible={!mediaPipeReady} onHidden={handleLoadScreenHidden} />
     </>
   );
