@@ -18,6 +18,10 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
     const containerRef = useRef<HTMLDivElement | null>(null);
     const barRef = useRef<HTMLDivElement | null>(null);
     const checkRef = useRef<HTMLSpanElement | null>(null);
+    const isEnteringRef = useRef(true);
+    const pendingStartRef = useRef(false);
+    const enterRaf1Ref = useRef<number | null>(null);
+    const enterRaf2Ref = useRef<number | null>(null);
     const tlRef = useRef<gsap.core.Tween | null>(null);
     const hideTimeoutRef = useRef<number | null>(null);
     const [phase, setPhase] = useState<"idle" | "holding" | "complete">("idle");
@@ -30,14 +34,39 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
 
     useEffect(() => {
       if (containerRef.current) {
-        gsap.fromTo(
-          containerRef.current,
-          { autoAlpha: 0, y: 12 },
-          { autoAlpha: 1, y: 0, duration: 0.35, ease: "power2.out" },
-        );
+        gsap.set(containerRef.current, { autoAlpha: 0 });
+        enterRaf1Ref.current = window.requestAnimationFrame(() => {
+          enterRaf2Ref.current = window.requestAnimationFrame(() => {
+            if (!containerRef.current) return;
+            gsap.to(containerRef.current, {
+              autoAlpha: 1,
+              duration: 0.35,
+              ease: "power2.out",
+              onComplete: () => {
+                isEnteringRef.current = false;
+                if (pendingStartRef.current && barRef.current && containerRef.current) {
+                  pendingStartRef.current = false;
+                  tlRef.current?.kill();
+                  gsap.set(barRef.current, { width: "0%" });
+                  tlRef.current = gsap.to(barRef.current, {
+                    width: "100%",
+                    duration: 1,
+                    ease: "linear",
+                  });
+                }
+              },
+            });
+          });
+        });
       }
 
       return () => {
+        if (enterRaf1Ref.current !== null) {
+          window.cancelAnimationFrame(enterRaf1Ref.current);
+        }
+        if (enterRaf2Ref.current !== null) {
+          window.cancelAnimationFrame(enterRaf2Ref.current);
+        }
         if (hideTimeoutRef.current !== null) {
           window.clearTimeout(hideTimeoutRef.current);
         }
@@ -53,8 +82,18 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
         }
         setPhase("holding");
         containerRef.current.style.display = "block";
-        gsap.set(containerRef.current, { autoAlpha: 1 });
-        if (checkRef.current) gsap.set(checkRef.current, { autoAlpha: 0, scale: 0.8 });
+        if (checkRef.current)
+          gsap.set(checkRef.current, { autoAlpha: 0, scale: 0.8 });
+        if (isEnteringRef.current) {
+          pendingStartRef.current = true;
+          return;
+        }
+        pendingStartRef.current = false;
+        gsap.to(containerRef.current, {
+          autoAlpha: 1,
+          duration: 0.12,
+          ease: "power1.out",
+        });
         tlRef.current?.kill();
         gsap.set(barRef.current, { width: "0%" });
         tlRef.current = gsap.to(barRef.current, {
@@ -80,7 +119,8 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
           containerRef.current.style.display = "block";
           gsap.to(containerRef.current, { autoAlpha: 1, duration: 0.08 });
         }
-        if (checkRef.current) gsap.set(checkRef.current, { autoAlpha: 0, scale: 0.8 });
+        if (checkRef.current)
+          gsap.set(checkRef.current, { autoAlpha: 0, scale: 0.8 });
       },
       complete: () => {
         if (!containerRef.current) return;
@@ -104,11 +144,12 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
           if (!containerRef.current) return;
           gsap.to(containerRef.current, {
             autoAlpha: 0,
-            y: 10,
+
             duration: 0.25,
             ease: "power1.inOut",
             onComplete: () => {
-              if (containerRef.current) containerRef.current.style.display = "none";
+              if (containerRef.current)
+                containerRef.current.style.display = "none";
             },
           });
           hideTimeoutRef.current = null;
@@ -127,7 +168,7 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
           width: 220,
           display: "block",
           pointerEvents: "none",
-          opacity: 1,
+          opacity: 0,
           zIndex: 9999,
         }}
       >
