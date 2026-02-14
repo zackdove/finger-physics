@@ -31,7 +31,12 @@ export const Handpose = forwardRef(
       if (!group.current || !points?.length) return;
 
       const p = points[8];
-      const x = (1 - p.x - 0.5) * viewport.width * side;
+      const nx = 0.5 - p.x;
+      const aspectBoost = Math.min(
+        2,
+        Math.max(1, viewport.height / viewport.width),
+      );
+      const x = nx * viewport.width * aspectBoost * side;
       const y = (1 - p.y - 0.5) * viewport.height;
       const z = 0;
 
