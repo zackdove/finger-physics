@@ -26,7 +26,7 @@ export const levaTheme = {
     root: "11px",
   },
   sizes: {
-    rootWidth: "330px",
+    rootWidth: "100%",
     controlWidth: "160px",
     scrubberWidth: "8px",
     scrubberHeight: "16px",

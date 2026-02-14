@@ -185,16 +185,19 @@ export default function App() {
             />
           </Physics>
         </Canvas>
-        <Leva
-          theme={levaTheme}
-          collapsed
-          hideTitleBar
-          hideCopyButton
-          titleBar={{
-            title: "Controls",
-            filter: false,
-          }}
-        />
+        <div className="leva-wrapper">
+          <Leva
+            fill
+            theme={levaTheme}
+            collapsed
+            hideTitleBar
+            hideCopyButton
+            titleBar={{
+              title: "Controls",
+              filter: false,
+            }}
+          />
+        </div>
       </HandLandmarker>
       <BlurOverlay visible={isBlurVisible} />
       {canRunCTA && <ShowHandCTA ref={showRef} />}
