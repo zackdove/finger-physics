@@ -12,7 +12,10 @@ import React, {
 } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Handpose } from "../Handpose/Handpose";
-import { useHandLandmarker } from "../HandLandmarker/HandLandmarker";
+import {
+  useHandLandmarker,
+  useHandLandmarkerStatus,
+} from "../HandLandmarker/HandLandmarker";
 import { useVideoTexture } from "../utils/useVideoTexture";
 
 /* ---------------------------------- */
@@ -37,19 +40,31 @@ export const useHandTracker = () => {
 /* HandTracker */
 /* ---------------------------------- */
 
-function HandTrackerInternal({
-  videoSrc,
-  depth,
-  trackedSphereColor,
-  trackedSphereSize,
-  ...props
-}: {
-  videoSrc: MediaStream | string;
-  depth: number;
-  trackedSphereColor: string;
-  trackedSphereSize: number;
-}) {
+const HandTrackerInternal = forwardRef(function HandTrackerInternal(
+  {
+    videoSrc,
+    depth,
+    trackedSphereColor,
+    trackedSphereSize,
+    onReady,
+    onCountStart,
+    onCountCancel,
+    onCountComplete,
+    ...props
+  }: {
+    videoSrc: MediaStream | string;
+    depth: number;
+    trackedSphereColor: string;
+    trackedSphereSize: number;
+    onReady: () => void;
+    onCountStart?: () => void;
+    onCountCancel?: () => void;
+    onCountComplete?: () => void;
+  },
+  ref,
+) {
   const handLandmarker = useHandLandmarker();
+  const handMarkTrackedTimeRef = useRef<number>(0);
 
   const leftHandRef = useRef<any>(null);
   const rightHandRef = useRef<any>(null);
@@ -83,12 +98,16 @@ function HandTrackerInternal({
     };
 
     handle = video.requestVideoFrameCallback(loop);
+    // ITS HERE
+    onReady();
+    console.log("Started video frame callback");
     return () => video.cancelVideoFrameCallback(handle);
   }, [video, detect]);
 
   /* -------- Hand data -------- */
 
   const points0 = hands?.landmarks?.[0];
+
   const points1 = hands?.landmarks?.[1];
 
   const handedness0 = hands?.handednesses?.[0]?.[0]?.categoryName ?? "Left";
@@ -100,9 +119,70 @@ function HandTrackerInternal({
       leftHandRef,
       rightHandRef,
       hands,
+      handMarkTrackedTimeRef,
     }),
     [hands],
   );
+
+  /* -------- Robust tracked time counter -------- */
+  useImperativeHandle(ref, () => api, [api]);
+
+  const trackingStartRef = useRef<number | null>(null);
+  const visibleSinceRef = useRef<number | null>(null);
+  const lastSeenRef = useRef<number | null>(null);
+  const isCountingRef = useRef(false);
+
+  const START_DELAY = 1; // seconds of continuous tracking required
+  const FLICKER_GRACE = 0.25; // seconds allowed to briefly lose tracking
+
+  const [handMarkTrackedTime, setHandMarkTrackedTime] = useState(0);
+
+  useFrame(() => {
+    if (!handMarkTrackedTimeRef) return;
+
+    const now = performance.now() / 1000;
+    const isVisible = !!points0;
+    const wasCounting = isCountingRef.current;
+
+    if (isVisible) {
+      lastSeenRef.current = now;
+
+      if (visibleSinceRef.current === null) {
+        visibleSinceRef.current = now;
+      }
+
+      const visibleDuration = now - visibleSinceRef.current;
+
+      if (!isCountingRef.current && visibleDuration >= START_DELAY) {
+        isCountingRef.current = true;
+        trackingStartRef.current = now;
+        onCountStart?.();
+      }
+
+      if (isCountingRef.current && trackingStartRef.current !== null) {
+        const elapsed = now - trackingStartRef.current;
+        handMarkTrackedTimeRef.current = elapsed; // Update ref directly
+        if (elapsed >= START_DELAY) {
+          // complete once
+          onCountComplete?.();
+          // reset counting so we don't repeatedly call complete
+          isCountingRef.current = false;
+          trackingStartRef.current = null;
+          visibleSinceRef.current = null;
+          handMarkTrackedTimeRef.current = START_DELAY;
+        }
+      }
+
+      return;
+    }
+
+    visibleSinceRef.current = null;
+    trackingStartRef.current = null;
+    isCountingRef.current = false;
+    lastSeenRef.current = null;
+    handMarkTrackedTimeRef.current = 0;
+    if (wasCounting) onCountCancel?.();
+  });
 
   /* -------- Render -------- */
 
@@ -133,7 +213,7 @@ function HandTrackerInternal({
       )}
     </HandTrackerContext.Provider>
   );
-}
+});
 
 export const HandTracker = forwardRef(function HandTracker(
   {
@@ -141,11 +221,19 @@ export const HandTracker = forwardRef(function HandTracker(
     depth = 0.15,
     trackedSphereColor,
     trackedSphereSize,
+    onReady,
+    onCountStart,
+    onCountCancel,
+    onCountComplete,
   }: {
     videoSrc?: MediaStream | string;
     depth?: number;
     trackedSphereColor: string;
     trackedSphereSize: number;
+    onReady: () => void;
+    onCountStart?: () => void;
+    onCountCancel?: () => void;
+    onCountComplete?: () => void;
   },
   ref,
 ) {
@@ -179,10 +267,15 @@ export const HandTracker = forwardRef(function HandTracker(
 
   return videoSrc ? (
     <HandTrackerInternal
+      ref={ref}
       videoSrc={videoSrc}
       depth={depth}
       trackedSphereColor={trackedSphereColor}
       trackedSphereSize={trackedSphereSize}
+      onReady={onReady}
+      onCountCancel={onCountCancel}
+      onCountComplete={onCountComplete}
+      onCountStart={onCountStart}
     />
   ) : null;
 });
