@@ -44,9 +44,10 @@ export function BlurOverlay({ visible }: { visible: boolean }) {
         inset: 0,
         display: "none",
         opacity: 0,
-        backdropFilter: "blur(5px)",
-        WebkitBackdropFilter: "blur(5px)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
         pointerEvents: "none",
+        zIndex: 1300,
       }}
     />
   );

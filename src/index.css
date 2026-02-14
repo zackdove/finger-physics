@@ -1,7 +1,7 @@
 :root {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 900;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -29,6 +29,17 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.leva {
+  --leva-fonts-mono: "JetBrains Mono", monospace;
+  --leva-fonts-sans: "Inter", system-ui, sans-serif;
+
+  font-family: var(--leva-fonts-sans) !important;
+}
+
+.leva * {
+  font-family: inherit !important;
 }
 
 h1 {

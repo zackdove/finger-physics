@@ -27,7 +27,7 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
     const [phase, setPhase] = useState<"idle" | "holding" | "complete">("idle");
     const message =
       phase === "idle"
-        ? "Please raise a hand to the camera"
+        ? "Please raise a finger to the camera"
         : phase === "holding"
           ? "Hold"
           : "Complete";
@@ -44,7 +44,11 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
               ease: "power2.out",
               onComplete: () => {
                 isEnteringRef.current = false;
-                if (pendingStartRef.current && barRef.current && containerRef.current) {
+                if (
+                  pendingStartRef.current &&
+                  barRef.current &&
+                  containerRef.current
+                ) {
                   pendingStartRef.current = false;
                   tlRef.current?.kill();
                   gsap.set(barRef.current, { width: "0%" });
@@ -166,10 +170,16 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: 220,
+          height: 120,
           display: "block",
           pointerEvents: "none",
+          color: "#ff0000",
           opacity: 0,
           zIndex: 9999,
+          backgroundColor: "black",
+          textTransform: "uppercase",
+          padding: 12,
+          textAlign: "center",
         }}
       >
         <div
@@ -177,21 +187,33 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
             marginBottom: 8,
             display: "flex",
             alignItems: "center",
+            flexDirection: "column",
+            justifyContent: "center",
             gap: 8,
+            height: 100,
           }}
         >
           <span>{message}</span>
+
           <span
             ref={checkRef}
             style={{
               opacity: 0,
               transform: "scale(0.8)",
-              color: "#22c55e",
+              color: "#ff0000",
               fontWeight: 700,
               lineHeight: 1,
             }}
           >
-            ✓
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.25 17.292l-4.5-4.364 1.857-1.858 2.643 2.506 5.643-5.784 1.857 1.857-7.5 7.643z" />
+            </svg>
           </span>
         </div>
         <div
@@ -199,13 +221,14 @@ export const ShowHandCTA = forwardRef<ShowHandCTAHandle, {}>(
             width: "100%",
             height: 8,
             background: "#222",
-            borderRadius: 4,
+            borderRadius: 0,
             overflow: "hidden",
+            zIndex: 1500,
           }}
         >
           <div
             ref={barRef}
-            style={{ height: "100%", background: "#4ade80", width: "0%" }}
+            style={{ height: "100%", background: "#ff0000", width: "0%" }}
           />
         </div>
       </div>

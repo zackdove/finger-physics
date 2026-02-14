@@ -1,4 +1,4 @@
-import { useControls } from "leva";
+import { button, useControls } from "leva";
 
 export const useSceneControls = () => {
   const controls = useControls("Scene", {
@@ -35,9 +35,22 @@ export const useSceneControls = () => {
       step: 0.05,
       label: "Tracked Sphere Size",
     },
-    forceStrength: { value: 3, min: 0, max: 20 },
-    forceDamping: { value: 0.25, min: 0, max: 2 },
-    forceOrbitSpeed: { value: 1, min: 0, max: 5 },
+    forceStrength: { value: 3, min: 0, max: 20, label: "Force Strength" },
+    forceDamping: { value: 0.25, min: 0, max: 2, label: "Force Damping" },
+    forceOrbitSpeed: { value: 1, min: 0, max: 5, label: "Orbit Speed" },
+    note: {
+      label: "About",
+      value:
+        "Show your index finger to interact with the scene. Built using MediaPipe Handpose and R3F.",
+      editable: false,
+    },
+    GitHub: button(() => {
+      window.open(
+        "https://github.com/zackdove/hand-physics",
+        "_blank",
+        "noopener,noreferrer",
+      );
+    }),
   });
 
   return controls;

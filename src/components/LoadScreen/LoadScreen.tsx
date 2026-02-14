@@ -76,6 +76,7 @@ export function LoadScreen({
         backgroundColor: "black",
         color: "red",
         opacity: 1,
+        zIndex: 2000,
       }}
     >
       <div ref={contentRef}>

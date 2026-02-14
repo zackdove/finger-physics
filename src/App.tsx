@@ -20,6 +20,8 @@ import {
 } from "./components/ShowHandCTA/ShowHandCTA";
 import { LoadScreen } from "./components/LoadScreen/LoadScreen";
 import { BlurOverlay } from "./components/BlurOverlay/BlurOverlay";
+import { Leva } from "leva";
+import { levaTheme } from "./config/LevaTheme";
 
 export default function App() {
   const HAND_CTA_STORAGE_KEY = "hand_cta_shown";
@@ -183,13 +185,20 @@ export default function App() {
             />
           </Physics>
         </Canvas>
+        <Leva
+          theme={levaTheme}
+          collapsed
+          hideTitleBar
+          hideCopyButton
+          titleBar={{
+            title: "Controls",
+            filter: false,
+          }}
+        />
       </HandLandmarker>
       <BlurOverlay visible={isBlurVisible} />
       {canRunCTA && <ShowHandCTA ref={showRef} />}
-      <LoadScreen
-        visible={!mediaPipeReady}
-        onHidden={handleLoadScreenHidden}
-      />
+      <LoadScreen visible={!mediaPipeReady} onHidden={handleLoadScreenHidden} />
     </>
   );
 }
