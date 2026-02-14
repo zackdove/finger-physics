@@ -44,6 +44,7 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
   {
     videoSrc,
     depth,
+    countEnabled,
     trackedSphereColor,
     trackedSphereSize,
     onReady,
@@ -54,6 +55,7 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
   }: {
     videoSrc: MediaStream | string;
     depth: number;
+    countEnabled: boolean;
     trackedSphereColor: string;
     trackedSphereSize: number;
     onReady: () => void;
@@ -128,17 +130,26 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
   useImperativeHandle(ref, () => api, [api]);
 
   const trackingStartRef = useRef<number | null>(null);
-  const visibleSinceRef = useRef<number | null>(null);
   const lastSeenRef = useRef<number | null>(null);
   const isCountingRef = useRef(false);
+  const completedForCurrentVisibilityRef = useRef(false);
 
-  const START_DELAY = 1; // seconds of continuous tracking required
+  const START_DELAY = 1; // seconds to hold after first detection
   const FLICKER_GRACE = 0.25; // seconds allowed to briefly lose tracking
-
-  const [handMarkTrackedTime, setHandMarkTrackedTime] = useState(0);
 
   useFrame(() => {
     if (!handMarkTrackedTimeRef) return;
+
+    if (!countEnabled) {
+      const wasCounting = isCountingRef.current;
+      if (wasCounting) onCountCancel?.();
+      trackingStartRef.current = null;
+      isCountingRef.current = false;
+      lastSeenRef.current = null;
+      completedForCurrentVisibilityRef.current = false;
+      handMarkTrackedTimeRef.current = 0;
+      return;
+    }
 
     const now = performance.now() / 1000;
     const isVisible = !!points0;
@@ -146,14 +157,7 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
 
     if (isVisible) {
       lastSeenRef.current = now;
-
-      if (visibleSinceRef.current === null) {
-        visibleSinceRef.current = now;
-      }
-
-      const visibleDuration = now - visibleSinceRef.current;
-
-      if (!isCountingRef.current && visibleDuration >= START_DELAY) {
+      if (!isCountingRef.current && !completedForCurrentVisibilityRef.current) {
         isCountingRef.current = true;
         trackingStartRef.current = now;
         onCountStart?.();
@@ -163,12 +167,10 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
         const elapsed = now - trackingStartRef.current;
         handMarkTrackedTimeRef.current = elapsed; // Update ref directly
         if (elapsed >= START_DELAY) {
-          // complete once
           onCountComplete?.();
-          // reset counting so we don't repeatedly call complete
           isCountingRef.current = false;
+          completedForCurrentVisibilityRef.current = true;
           trackingStartRef.current = null;
-          visibleSinceRef.current = null;
           handMarkTrackedTimeRef.current = START_DELAY;
         }
       }
@@ -176,12 +178,17 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
       return;
     }
 
-    visibleSinceRef.current = null;
+    const recentlySeen =
+      lastSeenRef.current !== null &&
+      now - lastSeenRef.current <= FLICKER_GRACE;
+    if (recentlySeen) return;
+
+    if (wasCounting) onCountCancel?.();
     trackingStartRef.current = null;
     isCountingRef.current = false;
     lastSeenRef.current = null;
+    completedForCurrentVisibilityRef.current = false;
     handMarkTrackedTimeRef.current = 0;
-    if (wasCounting) onCountCancel?.();
   });
 
   /* -------- Render -------- */
@@ -204,7 +211,7 @@ const HandTrackerInternal = forwardRef(function HandTrackerInternal(
         <Handpose
           ref={rightHandRef}
           points={points1}
-          side={handedness0 === "Left" ? -1 : 1}
+          side={handedness0 === "Left" ? 1 : -1}
           depth={depth}
           visible
           trackedSphereColor={trackedSphereColor}
@@ -219,6 +226,7 @@ export const HandTracker = forwardRef(function HandTracker(
   {
     videoSrc: videoSrcProp,
     depth = 0.15,
+    countEnabled = true,
     trackedSphereColor,
     trackedSphereSize,
     onReady,
@@ -228,6 +236,7 @@ export const HandTracker = forwardRef(function HandTracker(
   }: {
     videoSrc?: MediaStream | string;
     depth?: number;
+    countEnabled?: boolean;
     trackedSphereColor: string;
     trackedSphereSize: number;
     onReady: () => void;
@@ -270,6 +279,7 @@ export const HandTracker = forwardRef(function HandTracker(
       ref={ref}
       videoSrc={videoSrc}
       depth={depth}
+      countEnabled={countEnabled}
       trackedSphereColor={trackedSphereColor}
       trackedSphereSize={trackedSphereSize}
       onReady={onReady}

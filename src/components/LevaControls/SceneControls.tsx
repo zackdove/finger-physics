@@ -29,9 +29,9 @@ export const useSceneControls = () => {
       label: "Tracked Sphere Color",
     },
     trackedSphereSize: {
-      value: 0.2, // Smaller default size for the tracked sphere
+      value: 1, // Smaller default size for the tracked sphere
       min: 0.05,
-      max: 1,
+      max: 5,
       step: 0.05,
       label: "Tracked Sphere Size",
     },

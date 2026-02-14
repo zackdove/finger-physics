@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
+import gsap from "gsap";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Environment, Loader, Sphere } from "@react-three/drei";
 import { Physics, RigidBody } from "@react-three/rapier";
 import * as THREE from "three";
@@ -17,8 +18,24 @@ import {
   ShowHandCTA,
   ShowHandCTAHandle,
 } from "./components/ShowHandCTA/ShowHandCTA";
+import { LoadScreen } from "./components/LoadScreen/LoadScreen";
+import { BlurOverlay } from "./components/BlurOverlay/BlurOverlay";
 
 export default function App() {
+  const HAND_CTA_STORAGE_KEY = "hand_cta_shown";
+  const queryPersistValue =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("handCtaPersist")
+      : null;
+  const envPersistEnabled =
+    String(import.meta.env.VITE_PERSIST_HAND_CTA ?? "true") === "true";
+  const persistHandCTA =
+    queryPersistValue === "0"
+      ? false
+      : queryPersistValue === "1"
+        ? true
+        : envPersistEnabled;
+
   const [mediaPipeReady, setMediaPipeReady] = useState(false);
   const {
     backgroundColor,
@@ -34,24 +51,53 @@ export default function App() {
 
   const handTrackerRef = useRef<HandTrackerApi | null>(null);
   const [showHandProgress, setShowHandProgress] = useState(0);
+  const [isCTAEnabled, setIsCTAEnabled] = useState(false);
+  const [hasShownHandCTA, setHasShownHandCTA] = useState(() => {
+    if (!persistHandCTA || typeof window === "undefined") return false;
+    return window.localStorage.getItem(HAND_CTA_STORAGE_KEY) === "1";
+  });
 
   const showRef = useRef<ShowHandCTAHandle | null>(null);
+  const completeHideTimeoutRef = useRef<number | null>(null);
+  const blurHideTimeoutRef = useRef<number | null>(null);
+  const revealCTADelayRef = useRef<gsap.core.Tween | null>(null);
+  const [isBlurVisible, setIsBlurVisible] = useState(false);
+  const canRunCTA = isCTAEnabled && !hasShownHandCTA;
+  const handleLoadScreenHidden = useCallback(() => {
+    revealCTADelayRef.current?.kill();
+    revealCTADelayRef.current = gsap.delayedCall(0.5, () => {
+      setIsCTAEnabled(true);
+      revealCTADelayRef.current = null;
+    });
+  }, []);
+  const markHandCTAShown = () => {
+    setHasShownHandCTA(true);
+    if (persistHandCTA && typeof window !== "undefined") {
+      window.localStorage.setItem(HAND_CTA_STORAGE_KEY, "1");
+    }
+  };
 
   useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const t = handTrackerRef.current?.handMarkTrackedTimeRef?.current ?? 0;
-      const p = Math.min(100, Math.round((t / 1) * 100)); // 1s -> 100%
-      setShowHandProgress(p);
-      raf = requestAnimationFrame(loop);
+    return () => {
+      if (completeHideTimeoutRef.current !== null) {
+        window.clearTimeout(completeHideTimeoutRef.current);
+      }
+      if (blurHideTimeoutRef.current !== null) {
+        window.clearTimeout(blurHideTimeoutRef.current);
+      }
+      revealCTADelayRef.current?.kill();
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    if (!mediaPipeReady) return;
+    if (hasShownHandCTA) return;
+    setIsBlurVisible(true);
+  }, [mediaPipeReady, hasShownHandCTA]);
 
   return (
     <>
-      <MediaPipeLoader visible={!mediaPipeReady} />
+      {/* <MediaPipeLoader visible={!mediaPipeReady} /> */}
       <HandLandmarker>
         <Canvas
           camera={{
@@ -104,18 +150,46 @@ export default function App() {
             />
 
             <HandTracker
+              countEnabled={canRunCTA}
               trackedSphereColor={trackedSphereColor}
               trackedSphereSize={trackedSphereSize}
-              onCountStart={() => showRef.current?.start()}
-              onCountCancel={() => showRef.current?.cancel()}
-              onCountComplete={() => showRef.current?.complete()}
+              onCountStart={() => {
+                if (canRunCTA) showRef.current?.start();
+              }}
+              onCountCancel={() => {
+                if (canRunCTA) showRef.current?.cancel();
+              }}
+              onCountComplete={() => {
+                if (canRunCTA) {
+                  showRef.current?.complete();
+                  if (blurHideTimeoutRef.current !== null) {
+                    window.clearTimeout(blurHideTimeoutRef.current);
+                  }
+                  blurHideTimeoutRef.current = window.setTimeout(() => {
+                    setIsBlurVisible(false);
+                    blurHideTimeoutRef.current = null;
+                  }, 700);
+                  if (completeHideTimeoutRef.current !== null) {
+                    window.clearTimeout(completeHideTimeoutRef.current);
+                  }
+                  completeHideTimeoutRef.current = window.setTimeout(() => {
+                    markHandCTAShown();
+                    completeHideTimeoutRef.current = null;
+                  }, 1100);
+                }
+              }}
               onReady={() => setMediaPipeReady(true)}
               ref={handTrackerRef}
             />
           </Physics>
         </Canvas>
       </HandLandmarker>
-      <ShowHandCTA ref={showRef} />
+      <BlurOverlay visible={isBlurVisible} />
+      {canRunCTA && <ShowHandCTA ref={showRef} />}
+      <LoadScreen
+        visible={!mediaPipeReady}
+        onHidden={handleLoadScreenHidden}
+      />
     </>
   );
 }

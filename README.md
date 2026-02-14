@@ -71,3 +71,12 @@ export default defineConfig([
   },
 ])
 ```
+
+## Hand CTA Persistence
+
+`showHandCTA` is shown once per browser by default using `localStorage`.
+
+- Set `VITE_PERSIST_HAND_CTA=false` to disable persistence in development.
+- Override at runtime with query params:
+  - `?handCtaPersist=0` forces persistence off
+  - `?handCtaPersist=1` forces persistence on
