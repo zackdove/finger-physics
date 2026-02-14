@@ -27,7 +27,7 @@ import { useVideoTexture } from "../utils/useVideoTexture";
 export type HandTrackerApi = {
   leftHandRef: RefObject<RapierRigidBody | null>;
   rightHandRef: RefObject<RapierRigidBody | null>;
-  hands: HandLandmarkerResult | null;
+  handsRef: React.MutableRefObject<HandLandmarkerResult | null>;
   handMarkTrackedTimeRef: React.MutableRefObject<number>;
 };
 
@@ -78,6 +78,11 @@ const HandTrackerInternal = forwardRef<
   const handsRef = useRef<HandLandmarkerResult | null>(null);
   const points0Ref = useRef<NormalizedLandmark[] | undefined>(undefined);
   const points1Ref = useRef<NormalizedLandmark[] | undefined>(undefined);
+  const handViewRef = useRef({
+    has0: false,
+    has1: false,
+    handedness0: "Left",
+  });
   const [handView, setHandView] = useState({
     has0: false,
     has1: false,
@@ -99,20 +104,21 @@ const HandTrackerInternal = forwardRef<
         "Left";
       const nextHas0 = !!points0Ref.current;
       const nextHas1 = !!points1Ref.current;
-      setHandView((prev) => {
-        if (
-          prev.has0 === nextHas0 &&
-          prev.has1 === nextHas1 &&
-          prev.handedness0 === nextHandedness0
-        ) {
-          return prev;
-        }
-        return {
-          has0: nextHas0,
-          has1: nextHas1,
-          handedness0: nextHandedness0,
-        };
-      });
+      const prev = handViewRef.current;
+      if (
+        prev.has0 === nextHas0 &&
+        prev.has1 === nextHas1 &&
+        prev.handedness0 === nextHandedness0
+      ) {
+        return;
+      }
+      const nextView = {
+        has0: nextHas0,
+        has1: nextHas1,
+        handedness0: nextHandedness0,
+      };
+      handViewRef.current = nextView;
+      setHandView(nextView);
     },
     [handLandmarker],
   );
@@ -144,10 +150,10 @@ const HandTrackerInternal = forwardRef<
     () => ({
       leftHandRef,
       rightHandRef,
-      hands: handsRef.current,
+      handsRef,
       handMarkTrackedTimeRef,
     }),
-    [handView],
+    [],
   );
 
   /* -------- Robust tracked time counter -------- */
@@ -234,7 +240,7 @@ const HandTrackerInternal = forwardRef<
         <Handpose
           ref={rightHandRef}
           pointsRef={points1Ref}
-          side={handView.handedness0 === "Left" ? 1 : -1}
+          side={handView.handedness0 === "Left" ? -1 : 1}
           visible
           trackedSphereColor={trackedSphereColor}
           trackedSphereSize={trackedSphereSize}
